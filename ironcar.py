@@ -4,7 +4,7 @@ import numpy as np
 
 from app import socketio
 from PIL.Image import fromarray as PIL_convert
-from utils import ConfigException, CameraException
+from utils import ConfigException, CameraException, colored_message, FAIL, WARNING, OKGREEN
 
 CONFIG = 'config.json'
 CAM_RESOLUTION = (250, 150)
@@ -42,10 +42,35 @@ class Ironcar():
 
             self.pwm = PCA9685()
             self.pwm.set_pwm_freq(60)
+
+            s = 'pwm module successfully imported and initialized'
+            print(colored_message(s, OKGREEN))
+
         except Exception as e:
-            print('The car will not be able to move')
-            print('Are you executing this code on your laptop?')
-            print('The adafruit error: ', e)
+
+            import platform
+
+            # OS is MACOS/Linux OR Windows
+            if platform.system() in ['Darwin', 'Linux']:
+                # If executing on Raspi
+                if platform.uname().node == 'raspberrypi':
+                    s = 'The car will not be able to move...'
+                    d = {'type': 'danger', 'msg': s}
+                    socketio.emit('msg2user', d, namespace='/car')
+                    print(colored_message(s, FAIL))
+                else:
+                    s = 'You are executing this code on your laptop !'
+                    d = {'type': 'warning', 'msg': s}
+                    socketio.emit('msg2user', d, namespace='/car')
+                    print(colored_message(s, WARNING))
+            else:
+                s = 'You are executing this code on your laptop !\n'
+                'The project has not been tested thoroughly on Windows'
+                d = {'type': 'warning', 'msg': s}
+                socketio.emit('msg2user', d, namespace='/car')
+                print(colored_message(s, WARNING))
+
+            print(colored_message('The Adafruit Error : {}'.format(e), FAIL))
             self.pwm = None
 
         self.load_config()
@@ -66,13 +91,19 @@ class Ironcar():
         try:
             from picamera import PiCamera
             from picamera.array import PiRGBArray
+
+            s = 'picamera module successfully imported and initialized'
+            print(colored_message(s, OKGREEN))
         except Exception as e:
-            print('picamera import error : ', e)
+            print(colored_message('Exception : {}'.format(e), FAIL))
 
         try:
             cam = PiCamera(framerate=self.fps)
+
+            s = 'The camera is running'
+            print(colored_message(s, OKGREEN))
         except Exception as e:
-            print('Exception ', e)
+            print(colored_message('Exception : {}'.format(e), FAIL))
             raise CameraException()
 
         image_name = os.path.join(self.stream_path, 'capture.jpg')
@@ -118,10 +149,11 @@ class Ironcar():
                 pass
             return picture_path
         else:
-            socketio.emit('msg2user', {'type': 'warning',
-                                       'msg': 'There is no picture to send'}, namespace='/car')
+            s = 'There is no picture to send'
+            d = {'type': 'warning', 'msg': s}
+            socketio.emit('msg2user', d, namespace='/car')
             if self.verbose:
-                print('There is no picture to send')
+                print(s)
             return None
 
     def gas(self, value):
