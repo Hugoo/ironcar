@@ -156,8 +156,6 @@ def handle_config(data):
     parameters.
     """
 
-    print('SERVER : command update')
-
     command = data['command']
     value = data['value']
 
@@ -183,6 +181,8 @@ def handle_config(data):
         print('The command `{}` is not available in config'.format(command))
         return
 
+    print('Updating `{}` from {} to {}'.format(command, config['commands'][command], int(value)))
+    
     config['commands'][command] = int(value)
 
     with open(CONFIG, 'w') as fp:

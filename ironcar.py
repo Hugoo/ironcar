@@ -145,8 +145,13 @@ class Ironcar():
         if len(pictures):
             p = pictures[-1]
             picture_path = os.path.join(self.stream_path, p)
+
+            # Make sure there is an image to send
+            # The size is 0 when the file does exist but is being replaced at
+            # the same time
             while os.stat(picture_path).st_size == 0:
                 pass
+                
             return picture_path
         else:
             s = 'There is no picture to send'
